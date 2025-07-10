@@ -1,6 +1,6 @@
-# **SHUVLER \- Telegram Crypto Mining Game**
+# **SHUVLER \- Crypto Mining Game**
 
-Welcome to SHUVLER, an engaging Telegram-based crypto minigame built on the Solana blockchain. This application provides a modern, interactive experience where players can mine the fictional SHUVLER (SHV) cryptocurrency, upgrade their gear, and compete for higher earnings.
+Welcome to SHUVLER, an engaging crypto minigame built on the Solana blockchain. This application provides a modern, interactive experience where players can mine the fictional SHUVLER (SHV) cryptocurrency, upgrade their gear, and compete for higher earnings.
 
 This project is built as a web application using React and Vite, designed to be integrated as a Telegram Mini App. It features a complete user interface and simulates all core gameplay mechanics, including wallet connection and staking.
 
