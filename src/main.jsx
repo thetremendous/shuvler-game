@@ -10,12 +10,12 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 
 const Main = () => {
-    // --- MODIFICATION HERE: Changed 'devnet' to 'mainnet-beta' ---
-    const network = 'mainnet-beta'; // Or 'testnet' if you prefer a testing environment
+    const network = 'mainnet-beta'; // Already set to mainnet-beta from previous modification
     const endpoint = useMemo(() => clusterApiUrl(network), [network]);
     const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
     return (
+        // Corrected nesting: React.StrictMode should wrap the entire component tree.
         <React.StrictMode>
             <ConnectionProvider endpoint={endpoint}>
                 <WalletProvider wallets={wallets} autoConnect>
@@ -23,8 +23,9 @@ const Main = () => {
                         <App />
                     </WalletModalProvider>
                 </WalletProvider>
-            </React.StrictMode>
-        );
+            </ConnectionProvider>
+        </React.StrictMode>
+    );
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<Main />);
