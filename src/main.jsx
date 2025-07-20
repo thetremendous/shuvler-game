@@ -10,7 +10,8 @@ import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 
 const Main = () => {
-    const network = 'devnet';
+    // --- MODIFICATION HERE: Changed 'devnet' to 'mainnet-beta' ---
+    const network = 'mainnet-beta'; // Or 'testnet' if you prefer a testing environment
     const endpoint = useMemo(() => clusterApiUrl(network), [network]);
     const wallets = useMemo(() => [new PhantomWalletAdapter()], []);
 
@@ -22,9 +23,8 @@ const Main = () => {
                         <App />
                     </WalletModalProvider>
                 </WalletProvider>
-            </ConnectionProvider>
-        </React.StrictMode>
-    );
+            </React.StrictMode>
+        );
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<Main />);
