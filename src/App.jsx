@@ -1,13 +1,8 @@
-// src/App.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { Gem, Zap, User, Shield, Clock, ArrowUp, BarChart, ShoppingCart, TrendingUp, Power, ChevronsUp, DollarSign, Lock } from 'lucide-react';
-// Import Solana Web3.js and Wallet Adapter hooks
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { LAMPORTS_PER_SOL, PublicKey, Transaction, SystemProgram } from '@solana/web3.js'; // Added PublicKey, Transaction, SystemProgram
-import { WalletNotConnectedError } from '@solana/wallet-adapter-base'; // Added WalletNotConnectedError
 
-// --- MOCK SOLANA API (REMOVE OR COMMENT OUT THIS ENTIRE SECTION) ---
-/*
+// --- MOCK SOLANA API ---
+// In a real application, this would use @solana/web3.js
 const useMockSolana = () => {
     const [balance, setBalance] = useState(1000);
     const [staked, setStaked] = useState(0);
@@ -57,10 +52,9 @@ const useMockSolana = () => {
 
     return { connectWallet, getBalance, balance, setBalance, staked, setStaked, stake, unstake, loading };
 };
-*/
 
 
-// --- GAME DATA (Keep as is) ---
+// --- GAME DATA ---
 const UPGRADES = {
     equipment: [
         { id: 'e1', name: 'Basic Shovel', level: 1, cost: 50, boost: 1.2 },
@@ -94,7 +88,7 @@ const CHARACTER_STYLES = [
     { id: 'char3', name: 'Diamond Miner', color: 'bg-blue-300' },
 ];
 
-// --- UI COMPONENTS (Keep as is) ---
+// --- UI COMPONENTS ---
 
 const Header = ({ balance, staked }) => (
     <header className="bg-gray-900/50 backdrop-blur-sm p-4 rounded-b-3xl shadow-lg flex justify-between items-center text-white sticky top-0 z-10">
@@ -129,7 +123,7 @@ const MiningSection = ({ onMine, miningPower, characterStyle }) => {
 
     return (
         <div className="relative flex flex-col items-center justify-center my-8">
-            <div
+            <div 
                 className={`w-48 h-48 ${characterStyle.color} rounded-full flex items-center justify-center shadow-2xl cursor-pointer select-none transform transition-transform duration-150 active:scale-95 overflow-hidden`}
                 onClick={handleMine}
             >
@@ -197,7 +191,7 @@ const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
             setAmount('');
         }
     };
-
+    
     const handleUnstake = () => {
         const unstakeAmount = parseFloat(amount);
         if (!isNaN(unstakeAmount) && unstakeAmount > 0) {
@@ -223,7 +217,7 @@ const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
                         placeholder={`Amount (Balance: ${balance.toFixed(2)})`}
                         className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 pr-16 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
                     />
-                    <button
+                    <button 
                         onClick={() => setAmount(balance.toString())}
                         className="absolute right-2 top-1/2 -translate-y-1/2 bg-yellow-600 text-black text-xs font-bold py-1 px-3 rounded-md hover:bg-yellow-500 transition-colors"
                     >
@@ -231,14 +225,14 @@ const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
                     </button>
                 </div>
                 <div className="flex space-x-2 mt-3">
-                    <button
+                    <button 
                         onClick={handleStake}
                         disabled={loading || !amount || parseFloat(amount) > balance}
                         className="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg transition-colors hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Staking...' : 'Stake'}
                     </button>
-                    <button
+                    <button 
                         onClick={handleUnstake}
                         disabled={loading || !amount || parseFloat(amount) > staked}
                         className="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg transition-colors hover:bg-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed"
@@ -253,17 +247,7 @@ const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
 
 // --- MAIN APP COMPONENT ---
 export default function App() {
-    // --- Replaced useMockSolana with useConnection and useWallet ---
-    const { connection } = useConnection(); //
-    const { publicKey, sendTransaction, connected } = useWallet(); //
-
-    // States are now managed directly
-    const [balance, setBalance] = useState(0); // Initialize with 0 for real balance
-    const [staked, setStaked] = useState(0); // Staked amount will still be local without a smart contract
-    const [loading, setLoading] = useState(false); //
-    const [error, setError] = useState(null); // To display potential errors
-
-
+    const { balance, setBalance, staked, setStaked, stake, unstake, loading } = useMockSolana();
     const [activeTab, setActiveTab] = useState('mine');
     const [miningPower, setMiningPower] = useState(0.01);
     const [characterStyle, setCharacterStyle] = useState(CHARACTER_STYLES[0]);
@@ -273,38 +257,10 @@ export default function App() {
     const [purchasedCard, setPurchasedCard] = useState(null);
     const [selectedAutoMinerDuration, setSelectedAutoMinerDuration] = useState(12);
 
-    // --- EFFECT TO FETCH REAL BALANCE ---
-    useEffect(() => {
-        const fetchBalance = async () => {
-            if (!connection || !publicKey) {
-                setBalance(0); // Reset balance if not connected
-                return;
-            }
-            try {
-                setLoading(true);
-                setError(null);
-                const walletBalance = await connection.getBalance(publicKey); // Get balance in lamports
-                setBalance(walletBalance / LAMPORTS_PER_SOL); // Convert lamports to SOL
-            } catch (err) {
-                console.error("Error fetching balance:", err);
-                setError("Failed to fetch balance. " + err.message);
-                setBalance(0);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchBalance();
-        // Optionally, set up an interval to periodically refresh the balance
-        const intervalId = setInterval(fetchBalance, 15000); // Refresh every 15 seconds
-
-        return () => clearInterval(intervalId); // Cleanup interval on component unmount
-    }, [connection, publicKey]); // Re-run when connection or public key changes
-
     // Game loop for passive income (staking and auto-miner)
     useEffect(() => {
         const gameTick = setInterval(() => {
-            // Staking rewards (still local simulation unless integrated with smart contract)
+            // Staking rewards
             if (staked > 0) {
                 const stakingReward = (staked * 0.125) / (365 * 24 * 60 * 60); // 12.5% APY per second
                 setBalance(prev => prev + stakingReward);
@@ -319,7 +275,7 @@ export default function App() {
 
         return () => clearInterval(gameTick);
     }, [staked, autoMinerTime, miningPower, setBalance]);
-
+    
     // Booster countdown
     useEffect(() => {
         if (activeBoost) {
@@ -349,14 +305,11 @@ export default function App() {
 
 
     const handleMine = () => {
-        // Mining is still a local calculation for now
         const currentPower = activeBoost ? miningPower * activeBoost.multiplier : miningPower;
         setBalance(prev => prev + currentPower);
     };
 
     const handleBuyUpgrade = (item, type) => {
-        // These upgrades still affect local state. For on-chain persistence,
-        // you would interact with a smart contract here.
         if (type === 'equipment') {
             if (balance >= item.cost) {
                 setBalance(prev => prev - item.cost);
@@ -382,107 +335,9 @@ export default function App() {
         }
         if (type === 'autoMiner') {
             console.log(`Buying ${item.name} for $${item.cost}`);
-            // Auto-miner purchase is also local logic for now
             setAutoMinerTime(prev => prev + item.duration);
         }
     };
-
-    // --- REAL STAKE FUNCTION ---
-    const stake = useCallback(async (amount) => {
-        if (!publicKey || !sendTransaction) { // Check if wallet is connected
-            alert('Wallet not connected! Please connect your wallet to stake.');
-            return;
-        }
-        if (balance < amount) { // Local balance check
-            alert('Insufficient balance to stake.');
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            // --- THIS IS A PLACEHOLDER TRANSACTION ---
-            // In a real dApp, you would build an instruction to interact with your staking smart contract.
-            // This example simply transfers SOL from the user to a dummy address.
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    fromPubkey: publicKey,
-                    // Replace with the actual public key of your staking program's vault or main account
-                    toPubkey: new PublicKey("G42D8uX8vVvTqR9H3o2jP7L9z2Y0E6Q7B0C5A8F9D2E1"), // DUMMY PUBLIC KEY
-                    lamports: amount * LAMPORTS_PER_SOL, // Convert SOL to lamports
-                })
-            );
-
-            // Sign and send the transaction
-            const signature = await sendTransaction(transaction, connection); //
-            console.log('Transaction sent with signature:', signature);
-            await connection.confirmTransaction(signature, 'processed'); // Wait for confirmation
-            console.log('Transaction confirmed!');
-            alert(`Successfully initiated stake for ${amount} SHUVLER! (Transaction: ${signature})`);
-
-            // Update local state (you would fetch the real staked amount from your smart contract)
-            setBalance(prev => prev - amount);
-            setStaked(prev => prev + amount); // This is still local
-        } catch (err) {
-            console.error("Stake failed:", err);
-            if (err instanceof WalletNotConnectedError) {
-                setError("Wallet not connected. Please connect your wallet.");
-            } else {
-                setError(`Stake transaction failed: ${err.message}`);
-            }
-            alert(`Stake failed: ${err.message}`);
-        } finally {
-            setLoading(false);
-        }
-    }, [publicKey, sendTransaction, connection, balance]); // Dependencies for useCallback
-
-    // --- REAL UNSTAKE FUNCTION ---
-    const unstake = useCallback(async (amount) => {
-        if (!publicKey || !sendTransaction) { // Check if wallet is connected
-            alert('Wallet not connected! Please connect your wallet to unstake.');
-            return;
-        }
-        if (staked < amount) { // Local staked amount check
-            alert('Insufficient staked amount to unstake.');
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            // --- THIS IS A PLACEHOLDER TRANSACTION ---
-            // In a real dApp, you would build an instruction to interact with your unstaking smart contract.
-            // This example simply simulates receiving SOL back from a dummy address.
-            const transaction = new Transaction().add(
-                SystemProgram.transfer({
-                    // In a real scenario, this would be from your staking program/vault
-                    fromPubkey: new PublicKey("G42D8uX8vVvTqR9H3o2jP7L9z2Y0E6Q7B0C5A8F9D2E1"), // DUMMY PUBLIC KEY (replace with your program's address)
-                    toPubkey: publicKey,
-                    lamports: amount * LAMPORTS_PER_SOL, // Convert SOL to lamports
-                })
-            );
-
-            // Sign and send the transaction
-            const signature = await sendTransaction(transaction, connection); //
-            console.log('Transaction sent with signature:', signature);
-            await connection.confirmTransaction(signature, 'processed'); // Wait for confirmation
-            console.log('Transaction confirmed!');
-            alert(`Successfully initiated unstake for ${amount} SHUVLER! (Transaction: ${signature})`);
-
-            // Update local state (you would fetch the real staked amount from your smart contract)
-            setStaked(prev => prev - amount);
-            setBalance(prev => prev + amount); // This is still local
-        } catch (err) {
-            console.error("Unstake failed:", err);
-            setError(`Unstake transaction failed: ${err.message}`);
-            alert(`Unstake failed: ${err.message}`);
-        } finally {
-            setLoading(false);
-        }
-    }, [publicKey, sendTransaction, connection, staked]); // Dependencies for useCallback
-
 
     const renderContent = () => {
         switch (activeTab) {
@@ -516,7 +371,7 @@ export default function App() {
                             </div>
                         </div>
                         <UpgradeItem item={selectedMiner} onBuy={(it) => handleBuyUpgrade(it, 'autoMiner')} balance={balance} type="autoMiner"/>
-
+                        
                         <h2 className="text-xl font-bold text-white mt-6">Profit Cards</h2>
                         {cardLockoutEnd && (
                             <div className="text-center text-orange-400 bg-orange-500/10 p-2 rounded-lg">
@@ -524,19 +379,18 @@ export default function App() {
                             </div>
                         )}
                         {UPGRADES.cards.map(item => (
-                            <UpgradeItem
-                                key={item.id}
-                                item={item}
-                                onBuy={(it) => handleBuyUpgrade(it, 'card')}
-                                balance={balance}
-                                type="card"
+                            <UpgradeItem 
+                                key={item.id} 
+                                item={item} 
+                                onBuy={(it) => handleBuyUpgrade(it, 'card')} 
+                                balance={balance} 
+                                type="card" 
                                 isLocked={!!cardLockoutEnd || (purchasedCard && purchasedCard !== item.id)}
                             />
                         ))}
                     </div>
                 );
             case 'staking':
-                // Pass the real stake/unstake functions
                 return <StakingSection staked={staked} balance={balance} onStake={stake} onUnstake={unstake} loading={loading} />;
             case 'profile':
                 return (
@@ -558,7 +412,7 @@ export default function App() {
     };
 
     return (
-        <div className="bg-gray-900 text-white min-h-screen font-sans" style={{
+        <div className="bg-gray-900 text-white min-h-screen font-sans" style={{ 
             background: 'radial-gradient(circle, rgba(20,20,40,1) 0%, rgba(10,10,20,1) 100%)'
         }}>
             <style>{`
@@ -578,28 +432,19 @@ export default function App() {
             `}</style>
             <div className="container mx-auto max-w-md pb-24">
                 <Header balance={balance} staked={staked} />
-                {connected ? ( // Display content only if wallet is connected
-                    <main className="p-4">
-                        {loading && <div className="text-center text-blue-400 mb-4">Loading data...</div>}
-                        {error && <div className="text-center text-red-400 bg-red-500/10 p-2 rounded-lg mb-4">{error}</div>}
-                        {activeBoost && (
-                            <div className="bg-yellow-500/20 border border-yellow-500 text-yellow-300 p-3 rounded-xl text-center mb-4 animate-pulse">
-                                <p className="font-bold">{activeBoost.name} Active! (x{activeBoost.multiplier} Power)</p>
-                            </div>
-                        )}
-                        {autoMinerTime > 0 && (
-                             <div className="bg-blue-500/20 border border-blue-500 text-blue-300 p-3 rounded-xl text-center mb-4">
-                                <p className="font-bold">Auto-Miner Active: {new Date(autoMinerTime * 1000).toISOString().substr(11, 8)}</p>
-                            </div>
-                        )}
-                        {renderContent()}
-                    </main>
-                ) : (
-                    <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
-                        <p className="text-xl text-gray-300 mb-4">Connect your wallet to start playing!</p>
-                        <WalletMultiButton /> {/* This button is provided by WalletModalProvider */}
-                    </div>
-                )}
+                <main className="p-4">
+                    {activeBoost && (
+                        <div className="bg-yellow-500/20 border border-yellow-500 text-yellow-300 p-3 rounded-xl text-center mb-4 animate-pulse">
+                            <p className="font-bold">{activeBoost.name} Active! (x{activeBoost.multiplier} Power)</p>
+                        </div>
+                    )}
+                    {autoMinerTime > 0 && (
+                         <div className="bg-blue-500/20 border border-blue-500 text-blue-300 p-3 rounded-xl text-center mb-4">
+                            <p className="font-bold">Auto-Miner Active: {new Date(autoMinerTime * 1000).toISOString().substr(11, 8)}</p>
+                        </div>
+                    )}
+                    {renderContent()}
+                </main>
             </div>
             <nav className="fixed bottom-0 left-0 right-0 bg-gray-900/80 backdrop-blur-lg border-t border-gray-700/50 max-w-md mx-auto rounded-t-2xl">
                 <div className="flex justify-around">
