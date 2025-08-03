@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Gem, Zap, User, Shield, Clock, ArrowUp, BarChart, ShoppingCart, TrendingUp, Power, ChevronsUp, DollarSign, Lock } from 'lucide-react';
+import Modal from 'react-modal';
+import { Gem, Zap, User, Shield, Clock, ArrowUp, BarChart, ShoppingCart, TrendingUp, Power, ChevronsUp, DollarSign, Lock, List } from 'lucide-react';
 
 // --- MOCK SOLANA API ---
 // In a real application, this would use @solana/web3.js
@@ -81,12 +82,30 @@ const UPGRADES = {
 };
 
 const CHARACTER_STYLES = [
-    { id: 'char1', name: 'Default Miner', color: 'bg-gray-500' },
-    { id: 'char4', name: 'Silver Miner', color: 'bg-slate-400' },
-    { id: 'char2', name: 'Gold Miner', color: 'bg-yellow-500' },
-    { id: 'char5', name: 'Platinum Miner', color: 'bg-slate-300' },
-    { id: 'char3', name: 'Diamond Miner', color: 'bg-blue-300' },
+    { id: 'char1', name: 'Ivan Hristov', color: 'bg-gray-500', balance: 2500.00 },
+    { id: 'char2', name: 'Stefan Shopov', color: 'bg-slate-300', balance: 1500.00 },
+    { id: 'char3', name: 'Mario Kumbanski', color: 'bg-yellow-500', balance: 7000.00 },
+    { id: 'char4', name: 'Ivan Dimitrov', color: 'bg-orange-100', balance: 5000.00 },
+    { id: 'char5', name: 'Aleksandur Doychev', color: 'bg-green-300', balance: 3500.00 },
+    { id: 'char6', name: 'Mark Ivanov', color: 'bg-blue-300', balance: 3000.00 },
+    { id: 'char7', name: 'Emil Hadzhikotev', color: 'bg-red-500', balance: 15000.00 },
+
 ];
+
+const MOCK_DEPOSITS = [
+    { id: 'd1', name: 'Ivan Hristov',       date: '2025-07-15', time: '14:22PM',  amount: 2500.00, status: 'Completed' },
+    { id: 'd10', name: 'Ivan Hristov',      date: '2025-07-15', time: '14:21PM',  amount: 2500.00, status: 'Cancelled' },
+    { id: 'd2', name: 'Stefan Shopov',      date: '2025-07-22', time: '11:15AM',  amount: 1500.00, status: 'Completed' },
+    { id: 'd3', name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:44PM',  amount: 15000.00,  status: 'Completed' },
+    { id: 'd4', name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:46PM',  amount: 10000.00,  status: 'Pending' },
+    { id: 'd5', name: 'Mark Ivanov',        date: '2025-07-25', time: '14:50PM',  amount: 3000.00, status: 'Completed' },
+    { id: 'd6', name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:20PM',  amount: 1500.00, status: 'Completed' },
+    { id: 'd9', name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:24PM',  amount: 5500.00, status: 'Completed' },
+    { id: 'd7', name: 'Aleksandur Doychev', date: '2025-07-18', time: '20:25PM',  amount: 3500.00, status: 'Completed' },
+    { id: 'd8', name: 'Ivan Dimitrov',      date: '2025-07-20', time: '18:24PM',  amount: 5000.00, status: 'Completed' },
+
+];
+
 
 // --- UI COMPONENTS ---
 
@@ -100,7 +119,7 @@ const Header = ({ balance, staked }) => (
             </div>
         </div>
         <div className="text-right">
-            <p className="text-lg font-semibold">{balance.toFixed(4)} <span className="text-yellow-400">SHV</span></p>
+            <p className="text-lg font-semibold">{"€"+balance.toFixed(2)} <span className="text-yellow-400">EUR</span></p>
             <p className="text-xs text-gray-400">Staked: {staked.toFixed(2)} SHV</p>
         </div>
     </header>
@@ -245,6 +264,79 @@ const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
     );
 };
 
+const LedgerSection = ({ deposits }) => (
+    <div className="space-y-4">
+        <h2 className="text-xl font-bold text-white">Recent Deposits</h2>
+        <div className="bg-gray-800/50 p-4 rounded-xl">
+            <div className="space-y-3">
+                {deposits.map(deposit => {
+                    const statusColor = deposit.status === 'Completed'
+                        ? 'text-green-400 bg-green-500/10'
+                        : deposit.status === 'Pending'
+                        ? 'text-yellow-400 bg-yellow-500/10'
+                        : 'text-red-400 bg-red-500/10';
+
+                    return (
+                        <div key={deposit.id} className="flex justify-between items-center text-white border-b border-gray-700 pb-2 last:border-b-0">
+                            <div>
+                                <p className="font-semibold">{deposit.name + " - " + "€"+deposit.amount.toFixed(2)} EUR</p>
+                                <p className="text-xs text-gray-400">{deposit.date +" "+deposit.time}</p>
+                            </div>
+                            <span className={`text-sm font-medium px-2 py-1 rounded-full ${statusColor}`}>{deposit.status}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    </div>
+);
+const PasswordModal = ({
+    isOpen,
+    onClose,
+    onConfirm,
+    passwordInput,
+    setPasswordInput,
+    passwordError,
+    styleName
+}) => {
+    // Set the app element for react-modal accessibility
+    useEffect(() => {
+        Modal.setAppElement('#root');
+    }, []);
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onRequestClose={onClose}
+            style={{
+                overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)' },
+                content: {
+                    top: '50%', left: '50%', right: 'auto', bottom: 'auto',
+                    marginRight: '-50%', transform: 'translate(-50%, -50%)',
+                    backgroundColor: '#1a1a1a', border: '1px solid #333',
+                    borderRadius: '10px', color: 'white',
+                    width: '90%', maxWidth: '400px'
+                }
+            }}
+        >
+            <h2 className="text-xl font-bold mb-4">Enter Password</h2>
+            <p className="text-sm text-gray-400 mb-4">Enter the password to apply the "{styleName}" style.</p>
+            <input
+                type="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-700 rounded-lg p-3 text-white placeholder-gray-500 mb-2"
+                placeholder="Password"
+            />
+            {passwordError && <p className="text-red-500 text-sm mb-4">{passwordError}</p>}
+            <div className="flex justify-end space-x-2">
+                <button onClick={onClose} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button onClick={onConfirm} className="bg-yellow-500 text-black font-bold py-2 px-4 rounded-lg">Confirm</button>
+            </div>
+        </Modal>
+    );
+};
+
 // --- MAIN APP COMPONENT ---
 export default function App() {
     const { balance, setBalance, staked, setStaked, stake, unstake, loading } = useMockSolana();
@@ -256,6 +348,58 @@ export default function App() {
     const [cardLockoutEnd, setCardLockoutEnd] = useState(null);
     const [purchasedCard, setPurchasedCard] = useState(null);
     const [selectedAutoMinerDuration, setSelectedAutoMinerDuration] = useState(12);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [passwordInput, setPasswordInput] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [selectedStyle, setSelectedStyle] = useState(null);
+    const [successMessage, setSuccessMessage] = useState('');
+
+
+    useEffect(() => {
+        Modal.setAppElement('#root');
+    }, []);
+
+useEffect(() => {
+        if (successMessage) {
+            const timer = setTimeout(() => {
+                setSuccessMessage('');
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [successMessage]);
+const SuccessToast = ({ message }) => {
+        if (!message) return null;
+        return (
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 bg-green-500 text-white font-bold py-2 px-2 rounded-full shadow-lg z-50">
+                {message}
+            </div>
+        );
+    };
+
+    const handleStyleSelect = (style) => {
+        setSelectedStyle(style);
+        setIsModalOpen(true);
+        setPasswordError(''); // Clear previous errors
+    };
+
+    const handleModalClose = () => {
+        setIsModalOpen(false);
+        setPasswordInput('');
+        setSelectedStyle(null);
+    };
+
+    const handlePasswordConfirm = () => {
+        if (passwordInput === '1234') { // Your password
+            if (selectedStyle) {
+                setCharacterStyle(selectedStyle);
+                setBalance(selectedStyle.balance);
+                setSuccessMessage(`Welcome back,  ${selectedStyle.name}!`);
+            }
+            handleModalClose();
+        } else {
+            setPasswordError('Incorrect password. Please try again.');
+        }
+    };
 
     // Game loop for passive income (staking and auto-miner)
     useEffect(() => {
@@ -303,6 +447,10 @@ export default function App() {
         }
     }, [cardLockoutEnd]);
 
+    const handleStyleChange = (style) => {
+        setCharacterStyle(style);
+        setBalance(style.balance);
+    };
 
     const handleMine = () => {
         const currentPower = activeBoost ? miningPower * activeBoost.multiplier : miningPower;
@@ -338,7 +486,7 @@ export default function App() {
             setAutoMinerTime(prev => prev + item.duration);
         }
     };
-
+    
     const renderContent = () => {
         switch (activeTab) {
             case 'mine':
@@ -392,13 +540,19 @@ export default function App() {
                 );
             case 'staking':
                 return <StakingSection staked={staked} balance={balance} onStake={stake} onUnstake={unstake} loading={loading} />;
+            case 'ledger':
+                return <LedgerSection deposits={MOCK_DEPOSITS} />;
             case 'profile':
                 return (
                      <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-white">Character Style</h2>
+                        <h2 className="text-xl font-bold text-white">Investors List</h2>
                         <div className="grid grid-cols-2 gap-4">
                         {CHARACTER_STYLES.map(style => (
-                            <div key={style.id} onClick={() => setCharacterStyle(style)} className={`p-4 rounded-xl text-center cursor-pointer border-2 ${characterStyle.id === style.id ? 'border-yellow-400' : 'border-transparent'} bg-gray-800/50`}>
+                            <div 
+                                key={style.id} 
+                                onClick={() => handleStyleSelect(style)} // No changes needed here
+                                className={`p-4 rounded-xl text-center cursor-pointer border-2 ${characterStyle.id === style.id ? 'border-yellow-400' : 'border-transparent'} bg-gray-800/50`}
+                            >
                                 <div className={`w-16 h-16 ${style.color} rounded-full mx-auto mb-2`}></div>
                                 <p className="font-semibold text-white">{style.name}</p>
                             </div>
@@ -415,6 +569,17 @@ export default function App() {
         <div className="bg-gray-900 text-white min-h-screen font-sans" style={{ 
             background: 'radial-gradient(circle, rgba(20,20,40,1) 0%, rgba(10,10,20,1) 100%)'
         }}>
+            <PasswordModal
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                onConfirm={handlePasswordConfirm}
+                passwordInput={passwordInput}
+                setPasswordInput={setPasswordInput}
+                passwordError={passwordError}
+                styleName={selectedStyle?.name || ''}
+            />        
+            <SuccessToast message={successMessage} />
+
             <style>{`
                 .animate-ping-up {
                     animation: ping-up 1s cubic-bezier(0, 0, 0.2, 1) forwards;
@@ -453,6 +618,7 @@ export default function App() {
                     <TabButton activeTab={activeTab} tabName="shop" onClick={setActiveTab} icon={ShoppingCart}>Shop</TabButton>
                     <TabButton activeTab={activeTab} tabName="staking" onClick={setActiveTab} icon={TrendingUp}>Staking</TabButton>
                     <TabButton activeTab={activeTab} tabName="profile" onClick={setActiveTab} icon={User}>Profile</TabButton>
+                    <TabButton activeTab={activeTab} tabName="ledger" onClick={setActiveTab} icon={List}>Ledger</TabButton>
                 </div>
             </nav>
         </div>
