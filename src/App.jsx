@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Modal from 'react-modal';
 import { Gem, Zap, User, Shield, Clock, ArrowUp, BarChart, ShoppingCart, TrendingUp, Power, ChevronsUp, DollarSign, Lock, List } from 'lucide-react';
+import { useWallet } from '@solana/wallet-adapter-react'; // Import the useWallet hook
+
 
 // --- MOCK SOLANA API ---
 // In a real application, this would use @solana/web3.js
@@ -74,36 +76,48 @@ const UPGRADES = {
     autoMiner: {
         id: 'am1',
         name: 'Auto-Miner',
-        cost12h: 10,
-        cost24h: 20,
+        cost12h: 1000,
+        cost24h: 2000,
         duration12h: 12 * 3600,
         duration24h: 24 * 3600,
     }
 };
 
 const CHARACTER_STYLES = [
-    { id: 'char1', name: 'Ivan Hristov', color: 'bg-gray-500', balance: 2500.00 },
-    { id: 'char2', name: 'Stefan Shopov', color: 'bg-slate-300', balance: 1500.00 },
-    { id: 'char3', name: 'Mario Kumbanski', color: 'bg-yellow-500', balance: 7000.00 },
-    { id: 'char4', name: 'Ivan Dimitrov', color: 'bg-orange-100', balance: 5000.00 },
+    { id: 'char1', name: 'Ivan Hristov',       color: 'bg-gray-500', balance: 2500.00 },
+    { id: 'char2', name: 'Stefan Shopov',      color: 'bg-slate-300', balance: 1500.00 },
+    { id: 'char3', name: 'Mario Kumbanski',    color: 'bg-yellow-500', balance: 7000.00 },
+    { id: 'char4', name: 'Ivan Dimitrov',      color: 'bg-orange-100', balance: 5000.00 },
     { id: 'char5', name: 'Aleksandur Doychev', color: 'bg-green-300', balance: 3500.00 },
-    { id: 'char6', name: 'Mark Ivanov', color: 'bg-blue-300', balance: 3000.00 },
-    { id: 'char7', name: 'Emil Hadzhikotev', color: 'bg-red-500', balance: 15000.00 },
+    { id: 'char6', name: 'Mark Ivanov',        color: 'bg-blue-300', balance: 3000.00 },
+    { id: 'char7', name: 'Emil Hadzhikotev',   color: 'bg-red-500', balance: 15000.00 },
 
 ];
 
 const MOCK_DEPOSITS = [
-    { id: 'd1', name: 'Ivan Hristov',       date: '2025-07-15', time: '14:22PM',  amount: 2500.00, status: 'Completed' },
-    { id: 'd10', name: 'Ivan Hristov',      date: '2025-07-15', time: '14:21PM',  amount: 2500.00, status: 'Cancelled' },
-    { id: 'd2', name: 'Stefan Shopov',      date: '2025-07-22', time: '11:15AM',  amount: 1500.00, status: 'Completed' },
-    { id: 'd3', name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:44PM',  amount: 15000.00,  status: 'Completed' },
-    { id: 'd4', name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:46PM',  amount: 10000.00,  status: 'Pending' },
-    { id: 'd5', name: 'Mark Ivanov',        date: '2025-07-25', time: '14:50PM',  amount: 3000.00, status: 'Completed' },
-    { id: 'd6', name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:20PM',  amount: 1500.00, status: 'Completed' },
-    { id: 'd9', name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:24PM',  amount: 5500.00, status: 'Completed' },
-    { id: 'd7', name: 'Aleksandur Doychev', date: '2025-07-18', time: '20:25PM',  amount: 3500.00, status: 'Completed' },
-    { id: 'd8', name: 'Ivan Dimitrov',      date: '2025-07-20', time: '18:24PM',  amount: 5000.00, status: 'Completed' },
+    { id: 'd1',  name: 'Ivan Hristov',       date: '2025-07-15', time: '14:22PM',  amount: 2500.00,   status: 'Completed' },
+    { id: 'd10', name: 'Ivan Hristov',       date: '2025-07-15', time: '14:21PM',  amount: 2500.00,   status: 'Cancelled' },
+    { id: 'd2',  name: 'Stefan Shopov',      date: '2025-07-22', time: '11:15AM',  amount: 1500.00,   status: 'Completed' },
+    { id: 'd3',  name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:44PM',  amount: 15000.00,  status: 'Completed' },
+    { id: 'd4',  name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:46PM',  amount: 10000.00,  status: 'Pending' },
+    { id: 'd5',  name: 'Mark Ivanov',        date: '2025-07-25', time: '14:50PM',  amount: 3000.00,   status: 'Completed' },
+    { id: 'd6',  name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:20PM',  amount: 1500.00,   status: 'Completed' },
+    { id: 'd9',  name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:24PM',  amount: 5500.00,   status: 'Completed' },
+    { id: 'd7',  name: 'Aleksandur Doychev', date: '2025-07-18', time: '20:25PM',  amount: 3500.00,   status: 'Completed' },
+    { id: 'd8',  name: 'Ivan Dimitrov',      date: '2025-07-20', time: '18:24PM',  amount: 5000.00,   status: 'Completed' },
 
+];
+
+const MOCK_WITHDRAWS = [
+    { id: 'w1',  name: 'Ivan Hristov',       date: '2025-07-15', time: '14:22PM',  amount: 100.00,   status: 'Pending' },
+    { id: 'w2',  name: 'Stefan Shopov',      date: '2025-07-22', time: '11:15AM',  amount: 150.00,   status: 'Pending' },
+    { id: 'w3',  name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:44PM',  amount: 500.00,   status: 'Pending' },
+    { id: 'w4',  name: 'Emil Hadzhikotev',   date: '2024-07-22', time: '15:46PM',  amount: 1000.00,  status: 'Pending' },
+    { id: 'w5',  name: 'Mark Ivanov',        date: '2025-07-25', time: '14:50PM',  amount: 500.00,   status: 'Pending' },
+    { id: 'w6',  name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:20PM',  amount: 1500.00,   status: 'Pending' },
+    { id: 'w9',  name: 'Mario Kumbanski',    date: '2025-07-24', time: '21:24PM',  amount: 5500.00,   status: 'Pending' },
+    { id: 'w7',  name: 'Aleksandur Doychev', date: '2025-07-18', time: '20:25PM',  amount: 3500.00,   status: 'Pending' },
+    { id: 'w8',  name: 'Ivan Dimitrov',      date: '2025-07-20', time: '18:24PM',  amount: 5000.00,   status: 'Pending' },
 ];
 
 
@@ -125,6 +139,7 @@ const Header = ({ balance, staked }) => (
     </header>
 );
 
+// MINING SECTION BEGIN
 const MiningSection = ({ onMine, miningPower, characterStyle }) => {
     const [clicks, setClicks] = useState([]);
 
@@ -158,10 +173,12 @@ const MiningSection = ({ onMine, miningPower, characterStyle }) => {
                 ))}
             </div>
             <p className="mt-4 text-center text-lg text-white">Mining Power: <span className="font-bold text-yellow-400">{miningPower.toFixed(2)} SHV/tap</span></p>
+            
         </div>
     );
 };
 
+// CURRENT TAB SELECTION BEGIN
 const TabButton = ({ activeTab, tabName, onClick, children, icon: Icon }) => (
     <button
         onClick={() => onClick(tabName)}
@@ -172,6 +189,7 @@ const TabButton = ({ activeTab, tabName, onClick, children, icon: Icon }) => (
     </button>
 );
 
+//UPGRADE ITEM SECTION
 const UpgradeItem = ({ item, onBuy, balance, type, isLocked = false }) => (
     <div className="bg-gray-800/50 p-4 rounded-xl flex items-center justify-between shadow-md">
         <div>
@@ -200,6 +218,7 @@ const UpgradeItem = ({ item, onBuy, balance, type, isLocked = false }) => (
     </div>
 );
 
+// STAKING SECTION BEGIN 
 const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
     const [amount, setAmount] = useState('');
 
@@ -224,7 +243,7 @@ const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
             <div className="bg-gray-800/50 p-6 rounded-xl text-center">
                 <h3 className="text-lg font-semibold text-gray-300">Total Staked</h3>
                 <p className="text-4xl font-bold text-yellow-400 my-2">{staked.toFixed(4)} SHV</p>
-                <p className="text-sm text-green-400">Estimated APY: 12.5%</p>
+                <p className="text-sm text-green-400">Estimated APY: 2.5%</p>
             </div>
             <div className="bg-gray-800/50 p-4 rounded-xl">
                 <h4 className="font-bold text-white mb-2">Manage Stake</h4>
@@ -264,12 +283,29 @@ const StakingSection = ({ staked, balance, onStake, onUnstake, loading }) => {
     );
 };
 
-const LedgerSection = ({ deposits }) => (
-    <div className="space-y-4">
-        <h2 className="text-xl font-bold text-white">Recent Deposits</h2>
-        <div className="bg-gray-800/50 p-4 rounded-xl">
+// LEDGER SECTION BEGIN 
+const DepositModal = ({ isOpen, onClose, deposits }) => {
+    const [showAll, setShowAll] = useState(false);
+    const displayedDeposits = showAll ? deposits : deposits.slice(0, 5);
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onRequestClose={onClose}
+            style={{
+                overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)' },
+                content: {
+                    top: '50%', left: '50%', right: 'auto', bottom: 'auto',
+                    marginRight: '-50%', transform: 'translate(-50%, -50%)',
+                    backgroundColor: '#1a1a1a', border: '1px solid #333',
+                    borderRadius: '10px', color: 'white',
+                    width: '90%', maxWidth: '500px'
+                }
+            }}
+        >
+            <h2 className="text-xl font-bold mb-4">Deposits</h2>
             <div className="space-y-3">
-                {deposits.map(deposit => {
+                {displayedDeposits.map(deposit => {
                     const statusColor = deposit.status === 'Completed'
                         ? 'text-green-400 bg-green-500/10'
                         : deposit.status === 'Pending'
@@ -287,9 +323,90 @@ const LedgerSection = ({ deposits }) => (
                     );
                 })}
             </div>
+            {deposits.length > 5 && (
+                <button onClick={() => setShowAll(!showAll)} className="mt-4 text-yellow-400 font-bold py-2 w-full text-center">
+                    {showAll ? 'Show Less' : 'Show All'}
+                </button>
+            )}
+            <button onClick={onClose} className="mt-2 bg-yellow-500 text-black font-bold py-2 px-4 rounded-lg w-full">Close</button>
+        </Modal>
+    );
+};
+
+const WithdrawModal = ({ isOpen, onClose, withdrawals }) => {
+    const [showAll, setShowAll] = useState(false);
+    const displayedWithdrawals = showAll ? withdrawals : withdrawals.slice(0, 5);
+
+    return (
+        <Modal
+            isOpen={isOpen}
+            onRequestClose={onClose}
+            style={{
+                overlay: { backgroundColor: 'rgba(0, 0, 0, 0.75)' },
+                content: {
+                    top: '50%', left: '50%', right: 'auto', bottom: 'auto',
+                    marginRight: '-50%', transform: 'translate(-50%, -50%)',
+                    backgroundColor: '#1a1a1a', border: '1px solid #333',
+                    borderRadius: '10px', color: 'white',
+                    width: '90%', maxWidth: '500px'
+                }
+            }}
+        >
+            <h2 className="text-xl font-bold mb-4">Withdrawals</h2>
+            <div className="space-y-3">
+                {displayedWithdrawals.map(withdraw => {
+                    const statusColor = withdraw.status === 'Completed'
+                        ? 'text-green-400 bg-green-500/10'
+                        : withdraw.status === 'Pending'
+                        ? 'text-yellow-400 bg-yellow-500/10'
+                        : 'text-red-400 bg-red-500/10';
+
+                    return (
+                        <div key={withdraw.id} className="flex justify-between items-center text-white border-b border-gray-700 pb-2 last:border-b-0">
+                            <div>
+                                <p className="font-semibold">{withdraw.name + " - " + "€"+withdraw.amount.toFixed(2)} EUR</p>
+                                <p className="text-xs text-gray-400">{withdraw.date +" "+withdraw.time}</p>
+                            </div>
+                            <span className={`text-sm font-medium px-2 py-1 rounded-full ${statusColor}`}>{withdraw.status}</span>
+                        </div>
+                    );
+                })}
+            </div>
+            {withdrawals.length > 5 && (
+                <button onClick={() => setShowAll(!showAll)} className="mt-4 text-yellow-400 font-bold py-2 w-full text-center">
+                    {showAll ? 'Show Less' : 'Show All'}
+                </button>
+            )}
+            <button onClick={onClose} className="mt-2 bg-yellow-500 text-black font-bold py-2 px-4 rounded-lg w-full">Close</button>
+        </Modal>
+    );
+};
+
+// --- UI COMPONENTS ---
+
+const LedgerSection = ({ deposits, withdrawals }) => {
+    const [depositModalOpen, setDepositModalOpen] = useState(false);
+    const [withdrawModalOpen, setWithdrawModalOpen] = useState(false);
+
+    return (
+        <div className="space-y-4">
+            <h2 className="text-xl font-bold text-white">Ledger</h2>
+            <div className="flex space-x-4">
+                <button onClick={() => setDepositModalOpen(true)} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg">
+                    Deposits
+                </button>
+                <button onClick={() => setWithdrawModalOpen(true)} className="flex-1 bg-purple-600 text-white font-bold py-3 rounded-lg">
+                    Withdrawals
+                </button>
+            </div>
+
+            <DepositModal isOpen={depositModalOpen} onClose={() => setDepositModalOpen(false)} deposits={deposits} />
+            <WithdrawModal isOpen={withdrawModalOpen} onClose={() => setWithdrawModalOpen(false)} withdrawals={withdrawals} />
         </div>
-    </div>
-);
+    );
+};
+
+// PASSWORD MODAL BEGIN
 const PasswordModal = ({
     isOpen,
     onClose,
@@ -320,7 +437,7 @@ const PasswordModal = ({
             }}
         >
             <h2 className="text-xl font-bold mb-4">Enter Password</h2>
-            <p className="text-sm text-gray-400 mb-4">Enter the password to apply the "{styleName}" style.</p>
+            <p className="text-sm text-gray-400 mb-4">Enter password for "{styleName}" account.</p>
             <input
                 type="password"
                 value={passwordInput}
@@ -354,12 +471,11 @@ export default function App() {
     const [selectedStyle, setSelectedStyle] = useState(null);
     const [successMessage, setSuccessMessage] = useState('');
 
-
     useEffect(() => {
         Modal.setAppElement('#root');
     }, []);
 
-useEffect(() => {
+    useEffect(() => {
         if (successMessage) {
             const timer = setTimeout(() => {
                 setSuccessMessage('');
@@ -367,7 +483,8 @@ useEffect(() => {
             return () => clearTimeout(timer);
         }
     }, [successMessage]);
-const SuccessToast = ({ message }) => {
+
+    const SuccessToast = ({ message }) => {
         if (!message) return null;
         return (
             <div className="fixed top-1/2 left-1/2 -translate-x-1/2 bg-green-500 text-white font-bold py-2 px-2 rounded-full shadow-lg z-50">
@@ -541,7 +658,9 @@ const SuccessToast = ({ message }) => {
             case 'staking':
                 return <StakingSection staked={staked} balance={balance} onStake={stake} onUnstake={unstake} loading={loading} />;
             case 'ledger':
-                return <LedgerSection deposits={MOCK_DEPOSITS} />;
+                    
+                return <LedgerSection deposits={MOCK_DEPOSITS} withdrawals={MOCK_WITHDRAWS} />;
+
             case 'profile':
                 return (
                      <div className="space-y-4">
@@ -550,7 +669,7 @@ const SuccessToast = ({ message }) => {
                         {CHARACTER_STYLES.map(style => (
                             <div 
                                 key={style.id} 
-                                onClick={() => handleStyleSelect(style)} // No changes needed here
+                                onClick={() => handleStyleSelect(style)} 
                                 className={`p-4 rounded-xl text-center cursor-pointer border-2 ${characterStyle.id === style.id ? 'border-yellow-400' : 'border-transparent'} bg-gray-800/50`}
                             >
                                 <div className={`w-16 h-16 ${style.color} rounded-full mx-auto mb-2`}></div>
@@ -569,6 +688,7 @@ const SuccessToast = ({ message }) => {
         <div className="bg-gray-900 text-white min-h-screen font-sans" style={{ 
             background: 'radial-gradient(circle, rgba(20,20,40,1) 0%, rgba(10,10,20,1) 100%)'
         }}>
+
             <PasswordModal
                 isOpen={isModalOpen}
                 onClose={handleModalClose}
@@ -595,6 +715,7 @@ const SuccessToast = ({ message }) => {
                     }
                 }
             `}</style>
+
             <div className="container mx-auto max-w-md pb-24">
                 <Header balance={balance} staked={staked} />
                 <main className="p-4">
@@ -608,17 +729,19 @@ const SuccessToast = ({ message }) => {
                             <p className="font-bold">Auto-Miner Active: {new Date(autoMinerTime * 1000).toISOString().substr(11, 8)}</p>
                         </div>
                     )}
+
                     {renderContent()}
                 </main>
             </div>
+
             <nav className="fixed bottom-0 left-0 right-0 bg-gray-900/80 backdrop-blur-lg border-t border-gray-700/50 max-w-md mx-auto rounded-t-2xl">
                 <div className="flex justify-around">
                     <TabButton activeTab={activeTab} tabName="mine" onClick={setActiveTab} icon={Gem}>Mine</TabButton>
                     <TabButton activeTab={activeTab} tabName="upgrades" onClick={setActiveTab} icon={ChevronsUp}>Upgrades</TabButton>
                     <TabButton activeTab={activeTab} tabName="shop" onClick={setActiveTab} icon={ShoppingCart}>Shop</TabButton>
-                    <TabButton activeTab={activeTab} tabName="staking" onClick={setActiveTab} icon={TrendingUp}>Staking</TabButton>
-                    <TabButton activeTab={activeTab} tabName="profile" onClick={setActiveTab} icon={User}>Profile</TabButton>
+                    <TabButton activeTab={activeTab} tabName="staking" onClick={setActiveTab} icon={TrendingUp}>Staking</TabButton>      
                     <TabButton activeTab={activeTab} tabName="ledger" onClick={setActiveTab} icon={List}>Ledger</TabButton>
+                    <TabButton activeTab={activeTab} tabName="profile" onClick={setActiveTab} icon={User}>Profile</TabButton>
                 </div>
             </nav>
         </div>
